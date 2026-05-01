@@ -29,18 +29,12 @@ class HomeHeroCarousel extends StatelessWidget {
               double value = 1.0;
               if (controller.position.haveDimensions) {
                 value = controller.page! - index;
-                value = (1 - (value.abs() * 0.15)).clamp(
-                  0.85,
-                  1.0,
-                );
+                value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
               } else {
                 value = index == 0 ? 1.0 : 0.85;
               }
 
-              return Transform.scale(
-                scale: value,
-                child: child,
-              );
+              return Transform.scale(scale: value, child: child);
             },
             child: cardBuilder(mangaList[index]),
           );
