@@ -2,6 +2,7 @@ import 'package:animanga/core/constants/api_endpoints.dart';
 import 'package:animanga/core/network/api_client.dart';
 import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:animanga/features/manga/domain/models/manga_detail_model.dart';
+import 'package:animanga/features/manga/domain/models/manga_character_model.dart';
 
 class MangaRepository {
   final ApiClient _apiClient = ApiClient.instance;
@@ -65,5 +66,17 @@ class MangaRepository {
     }
 
     return null;
+  }
+
+  Future<List<MangaCharacterModel>> getMangaCharacters(int id) async {
+    final url = '${ApiEndpoints.baseUrl}manga/$id/characters';
+    final response = await _apiClient.getData(url);
+
+    if (response != null && response['data'] != null) {
+      final List data = response['data'];
+      return data.map((json) => MangaCharacterModel.fromJson(json)).toList();
+    }
+
+    return [];
   }
 }
