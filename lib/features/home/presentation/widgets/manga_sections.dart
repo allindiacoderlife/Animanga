@@ -1,6 +1,8 @@
 import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:go_router/go_router.dart';
+import 'package:animanga/config/router/app_routes.dart';
 
 class SectionTitle extends StatelessWidget {
   final String title;
@@ -39,8 +41,9 @@ class SectionTitle extends StatelessWidget {
 
 class HorizontalMangaList extends StatefulWidget {
   final List<MangaModel> mangaList;
+  final String? tagPrefix;
 
-  const HorizontalMangaList({super.key, required this.mangaList});
+  const HorizontalMangaList({super.key, required this.mangaList, this.tagPrefix});
 
   @override
   State<HorizontalMangaList> createState() => _HorizontalMangaListState();
@@ -97,108 +100,138 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                 begin: const Offset(0.3, 0),
                 end: Offset.zero,
               ).animate(animation),
-              child: AnimatedBuilder(
-                animation: _scrollController,
-                builder: (context, child) {
-                  double scale = 1.0;
-                  if (_scrollController.hasClients) {
-                    const itemWidth = 122.0;
-                    final itemPosition = index * itemWidth;
-                    final scrollOffset = _scrollController.offset;
-                    final viewportWidth =
-                        _scrollController.position.viewportDimension;
-
-                    final distanceToCenter =
-                        (itemPosition + itemWidth / 2) -
-                        (scrollOffset + viewportWidth / 2);
-                    final normalizedDistance =
-                        (distanceToCenter / (viewportWidth / 2)).abs();
-
-                    scale = (1.0 - (normalizedDistance * 0.1)).clamp(0.9, 1.0);
-                  }
-
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Container(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: SizedBox(
                   width: 110,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              manga.imageUrl,
-                              height: 160,
-                              width: 110,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: Colors.grey[900],
-                                height: 160,
-                                width: 110,
-                                child: const Icon(Icons.image_not_supported),
-                              ),
-                            ),
+                  child: AnimatedBuilder(
+                    animation: _scrollController,
+                    builder: (context, child) {
+                      double scale = 1.0;
+                      if (_scrollController.hasClients) {
+                        const itemWidth = 122.0;
+                        final itemPosition = index * itemWidth;
+                        final scrollOffset = _scrollController.offset;
+                        final viewportWidth =
+                            _scrollController.position.viewportDimension;
+
+                        final distanceToCenter =
+                            (itemPosition + itemWidth / 2) -
+                            (scrollOffset + viewportWidth / 2);
+                        final normalizedDistance =
+                            (distanceToCenter / (viewportWidth / 2)).abs();
+
+                        scale = (1.0 - (normalizedDistance * 0.1)).clamp(
+                          0.9,
+                          1.0,
+                        );
+                      }
+
+                      return Transform.scale(scale: scale, child: child);
+                    },
+                    child: GestureDetector(
+                      onTap: () {
+                        final heroTag = widget.tagPrefix != null
+                            ? '${widget.tagPrefix}_${manga.malId}_$index'
+                            : 'manga_cover_${manga.malId}_$index';
+                        context.push(
+                          AppRoutes.mangaDetail.replaceAll(
+                            ':id',
+                            manga.malId.toString(),
                           ),
-                          Positioned(
-                            bottom: 4,
-                            right: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFECA4F5,
-                                ).withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    manga.score?.toString() ?? 'N/A',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                          extra: {
+                            'heroTag': heroTag,
+                            'initialTitle': manga.title,
+                            'initialImageUrl': manga.imageUrl,
+                          },
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Hero(
+                                  tag: widget.tagPrefix != null
+                                      ? '${widget.tagPrefix}_${manga.malId}_$index'
+                                      : 'manga_cover_${manga.malId}_$index',
+                                  child: Image.network(
+                                    manga.imageUrl,
+                                    height: 160,
+                                    width: 110,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.grey[900],
+                                      height: 160,
+                                      width: 110,
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                      ),
                                     ),
                                   ),
-                                  const Icon(
-                                    Icons.star,
-                                    size: 10,
-                                    color: Colors.black,
-                                  ),
-                                ],
+                                ),
                               ),
+                              Positioned(
+                                bottom: 4,
+                                right: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFECA4F5,
+                                    ).withValues(alpha: 0.9),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        manga.score?.toString() ?? 'N/A',
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.star,
+                                        color: Colors.black,
+                                        size: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            manga.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '${manga.status ?? "UNKNOWN"} | ${manga.chapters ?? "?"} Ch',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 10,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        manga.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '${manga.status ?? "UNKNOWN"} | ${manga.chapters ?? "?"} Ch',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),

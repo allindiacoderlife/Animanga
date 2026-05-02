@@ -6,6 +6,9 @@ class MangaGridCard extends StatelessWidget {
   final String score;
   final String coverUrl;
   final bool showStatusDot;
+  final VoidCallback? onTap;
+  final int malId;
+  final String? heroTag;
 
   const MangaGridCard({
     super.key,
@@ -13,13 +16,18 @@ class MangaGridCard extends StatelessWidget {
     required this.chapters,
     required this.score,
     required this.coverUrl,
+    required this.malId,
+    this.heroTag,
     this.showStatusDot = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Image Header
         Expanded(
@@ -29,11 +37,14 @@ class MangaGridCard extends StatelessWidget {
               Positioned.fill(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    coverUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(color: Colors.grey[800]),
+                  child: Hero(
+                    tag: heroTag ?? 'manga_cover_$malId',
+                    child: Image.network(
+                      coverUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Container(color: Colors.grey[800]),
+                    ),
                   ),
                 ),
               ),
@@ -113,6 +124,7 @@ class MangaGridCard extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }

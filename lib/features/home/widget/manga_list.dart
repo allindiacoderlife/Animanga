@@ -3,6 +3,8 @@ import 'package:animanga/features/manga/data/repositories/manga_repository.dart'
 import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:flutter/material.dart';
 import 'package:animanga/features/home/widget/manga_card.dart';
+import 'package:go_router/go_router.dart';
+import 'package:animanga/config/router/app_routes.dart';
 
 class MangaList extends StatefulWidget {
   final String title;
@@ -203,6 +205,16 @@ class _MangaListState extends State<MangaList>
                 score: manga.score?.toString() ?? 'N/A',
                 coverUrl: manga.imageUrl,
                 showStatusDot: showStatusDot,
+                malId: manga.malId,
+                heroTag: 'list_grid_${manga.malId}',
+                onTap: () => context.push(
+                  AppRoutes.mangaDetail.replaceAll(':id', manga.malId.toString()),
+                  extra: {
+                    'heroTag': 'list_grid_${manga.malId}',
+                    'initialTitle': manga.title,
+                    'initialImageUrl': manga.imageUrl,
+                  },
+                ),
               ),
             ),
           ),
@@ -279,6 +291,16 @@ class _MangaListState extends State<MangaList>
                   coverUrl: manga.imageUrl,
                   bannerUrl: manga.imageUrl,
                   showStatusDot: showStatusDot,
+                  malId: manga.malId,
+                  heroTag: 'list_card_${manga.malId}',
+                  onTap: () => context.push(
+                    AppRoutes.mangaDetail.replaceAll(':id', manga.malId.toString()),
+                    extra: {
+                      'heroTag': 'list_card_${manga.malId}',
+                      'initialTitle': manga.title,
+                      'initialImageUrl': manga.imageUrl,
+                    },
+                  ),
                 ),
               ),
             ),

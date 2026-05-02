@@ -4,7 +4,7 @@ class HomeHeroCarousel<T> extends StatelessWidget {
   final PageController controller;
   final List<T> mangaList;
   final Function(int) onPageChanged;
-  final Widget Function(T) cardBuilder;
+  final Widget Function(T, int) cardBuilder;
 
   const HomeHeroCarousel({
     super.key,
@@ -36,7 +36,7 @@ class HomeHeroCarousel<T> extends StatelessWidget {
 
               return Transform.scale(scale: value, child: child);
             },
-            child: cardBuilder(mangaList[index]),
+            child: cardBuilder(mangaList[index], index),
           );
         },
       ),

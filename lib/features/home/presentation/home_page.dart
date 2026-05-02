@@ -272,8 +272,9 @@ class _HomePageState extends State<HomePage>
                                 mangaList: _topMangaList ?? [],
                                 onPageChanged: (index) =>
                                     setState(() => _currentHeroIndex = index),
-                                cardBuilder: (manga) => _buildHeroCardFromModel(
+                                cardBuilder: (manga, index) => _buildHeroCardFromModel(
                                   manga as MangaModel,
+                                  index,
                                 ),
                               ),
                       ),
@@ -477,7 +478,20 @@ class _HomePageState extends State<HomePage>
                           score: manga.score?.toString() ?? 'N/A',
                           coverUrl: manga.imageUrl,
                           bannerUrl: manga.imageUrl,
+                          malId: manga.malId,
+                          heroTag: 'popular_${manga.malId}_$index',
                           showStatusDot: index >= 2,
+                          onTap: () => context.push(
+                            AppRoutes.mangaDetail.replaceAll(
+                              ':id',
+                              manga.malId.toString(),
+                            ),
+                            extra: {
+                              'heroTag': 'popular_${manga.malId}_$index',
+                              'initialTitle': manga.title,
+                              'initialImageUrl': manga.imageUrl,
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -508,7 +522,10 @@ class _HomePageState extends State<HomePage>
                 height: 220,
                 child: Center(child: CircularProgressIndicator()),
               )
-            : HorizontalMangaList(mangaList: list ?? []),
+            : HorizontalMangaList(
+                mangaList: list ?? [],
+                tagPrefix: title.toLowerCase().replaceAll(' ', '_'),
+              ),
       ],
     );
   }
@@ -524,50 +541,66 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildHeroCardFromModel(MangaModel manga) {
-    return Container(
-      decoration: const BoxDecoration(color: Colors.transparent),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(
-              manga.imageUrl,
-              width: 120,
-              height: 180,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Container(width: 120, height: 180, color: Colors.grey[800]),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildScoreBadge(manga.score?.toString() ?? 'N/A'),
-                const SizedBox(height: 8),
-                Text(
-                  manga.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+  Widget _buildHeroCardFromModel(MangaModel manga, int index) {
+    return GestureDetector(
+      onTap: () => context.push(
+        AppRoutes.mangaDetail.replaceAll(':id', manga.malId.toString()),
+        extra: {
+          'heroTag': 'hero_carousel_${manga.malId}_$index',
+          'initialTitle': manga.title,
+          'initialImageUrl': manga.imageUrl,
+        },
+      ),
+      child: Container(
+        decoration: const BoxDecoration(color: Colors.transparent),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Hero(
+                tag: 'hero_carousel_${manga.malId}_$index',
+                child: Image.network(
+                  manga.imageUrl,
+                  width: 120,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 120,
+                    height: 180,
+                    color: Colors.grey[800],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  manga.status ?? 'UNKNOWN',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const Spacer(),
-                _buildHeroFooterFromModel(manga),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildScoreBadge(manga.score?.toString() ?? 'N/A'),
+                  const SizedBox(height: 8),
+                  Text(
+                    manga.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    manga.status ?? 'UNKNOWN',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  const Spacer(),
+                  _buildHeroFooterFromModel(manga),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

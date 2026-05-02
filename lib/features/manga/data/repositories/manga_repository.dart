@@ -1,6 +1,7 @@
 import 'package:animanga/core/constants/api_endpoints.dart';
 import 'package:animanga/core/network/api_client.dart';
 import 'package:animanga/features/manga/domain/models/manga_model.dart';
+import 'package:animanga/features/manga/domain/models/manga_detail_model.dart';
 
 class MangaRepository {
   final ApiClient _apiClient = ApiClient.instance;
@@ -53,5 +54,16 @@ class MangaRepository {
     }
 
     return [];
+  }
+
+  Future<MangaDetailModel?> getMangaFull(int id) async {
+    final url = '${ApiEndpoints.baseUrl}manga/$id/full';
+    final response = await _apiClient.getData(url);
+
+    if (response != null && response['data'] != null) {
+      return MangaDetailModel.fromJson(response['data']);
+    }
+
+    return null;
   }
 }
