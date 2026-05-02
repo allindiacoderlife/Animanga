@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class HomeHeroCarousel extends StatelessWidget {
+class HomeHeroCarousel<T> extends StatelessWidget {
   final PageController controller;
-  final List<Map<String, String>> mangaList;
+  final List<T> mangaList;
   final Function(int) onPageChanged;
-  final Widget Function(Map<String, String>) cardBuilder;
+  final Widget Function(T) cardBuilder;
 
   const HomeHeroCarousel({
     super.key,

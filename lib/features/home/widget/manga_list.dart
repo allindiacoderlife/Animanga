@@ -1,10 +1,18 @@
-import 'package:animanga/core/constants/asset_path.dart';
 import 'package:animanga/features/home/widget/manga_grid_card.dart';
+import 'package:animanga/features/manga/data/repositories/manga_repository.dart';
+import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:flutter/material.dart';
 import 'package:animanga/features/home/widget/manga_card.dart';
 
 class MangaList extends StatefulWidget {
-  const MangaList({super.key});
+  final String title;
+  final List<MangaModel>? initialManga;
+
+  const MangaList({
+    super.key,
+    this.title = 'Trending Manga',
+    this.initialManga,
+  });
 
   @override
   State<MangaList> createState() => _MangaListState();
@@ -12,8 +20,10 @@ class MangaList extends StatefulWidget {
 
 class _MangaListState extends State<MangaList>
     with SingleTickerProviderStateMixin {
-  // Add this state variable to track the view mode
   bool _isGridView = false;
+  final MangaRepository _repository = MangaRepository();
+  List<MangaModel> _mangaList = [];
+  bool _isLoading = true;
 
   // 1. Add a ScrollController
   late final ScrollController _scrollController;
@@ -33,7 +43,36 @@ class _MangaListState extends State<MangaList>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _entranceController.forward();
+
+    if (widget.initialManga != null) {
+      _mangaList = widget.initialManga!;
+      _isLoading = false;
+      _entranceController.forward();
+    } else {
+      _fetchManga();
+    }
+  }
+
+  Future<void> _fetchManga() async {
+    try {
+      final list = await _repository.searchManga(
+        orderBy: 'popularity',
+        limit: 50,
+      );
+      if (mounted) {
+        setState(() {
+          _mangaList = list;
+          _isLoading = false;
+        });
+        _entranceController.forward();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -42,289 +81,6 @@ class _MangaListState extends State<MangaList>
     _entranceController.dispose();
     super.dispose();
   }
-
-  final List<Map<String, String>> dummyManga = [
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-    {
-      'title': 'Chainsaw Man',
-      'chapters': '232',
-      'score': '8.5',
-      'coverUrl': AssetPath.coverOne,
-      'bannerUrl': AssetPath.bannerOne,
-    },
-    {
-      'title': 'Jujutsu Kaisen',
-      'chapters': '272',
-      'score': '8.0',
-      'coverUrl': AssetPath.coverTwo,
-      'bannerUrl': AssetPath.bannerTwo,
-    },
-    {
-      'title': 'ONE PIECE',
-      'chapters': '??',
-      'score': '9.2',
-      'coverUrl': AssetPath.coverThree,
-      'bannerUrl': AssetPath.bannerThree,
-    },
-    {
-      'title': 'Spy x Family',
-      'chapters': '??',
-      'score': '9.1',
-      'coverUrl': AssetPath.coverFour,
-      'bannerUrl': AssetPath.bannerFour,
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -338,9 +94,9 @@ class _MangaListState extends State<MangaList>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Trending Manga (50)',
-                    style: TextStyle(
+                  Text(
+                    '${widget.title} (${_mangaList.length})',
+                    style: const TextStyle(
                       color: Color(0xFFECA4F5),
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -392,8 +148,15 @@ class _MangaListState extends State<MangaList>
               ),
             ),
             Expanded(
-              // Switch between Grid and List based on state
-              child: _isGridView ? _buildGridView() : _buildListView(),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFECA4F5),
+                      ),
+                    )
+                  : _isGridView
+                  ? _buildGridView()
+                  : _buildListView(),
             ),
           ],
         ),
@@ -411,9 +174,9 @@ class _MangaListState extends State<MangaList>
         mainAxisSpacing: 16.0, // Vertical space between rows
         childAspectRatio: 0.52, // Tweak this to adjust the height of the cards
       ),
-      itemCount: dummyManga.length,
+      itemCount: _mangaList.length,
       itemBuilder: (context, index) {
-        final manga = dummyManga[index];
+        final manga = _mangaList[index];
         final showStatusDot = index >= 2;
 
         final animation = CurvedAnimation(
@@ -435,10 +198,10 @@ class _MangaListState extends State<MangaList>
                 end: Offset.zero,
               ).animate(animation),
               child: MangaGridCard(
-                title: manga['title']!,
-                chapters: manga['chapters']!,
-                score: manga['score']!,
-                coverUrl: manga['coverUrl']!,
+                title: manga.title,
+                chapters: manga.chapters?.toString() ?? '?',
+                score: manga.score?.toString() ?? 'N/A',
+                coverUrl: manga.imageUrl,
                 showStatusDot: showStatusDot,
               ),
             ),
@@ -452,9 +215,9 @@ class _MangaListState extends State<MangaList>
   Widget _buildListView() {
     return ListView.builder(
       controller: _scrollController,
-      itemCount: dummyManga.length,
+      itemCount: _mangaList.length,
       itemBuilder: (context, index) {
-        final manga = dummyManga[index];
+        final manga = _mangaList[index];
         final showStatusDot = index >= 2;
 
         final animation = CurvedAnimation(
@@ -501,9 +264,8 @@ class _MangaListState extends State<MangaList>
                   return Opacity(
                     opacity: opacity,
                     child: Transform(
-                      transform: Matrix4.identity()
-                        ..setTranslationRaw(0.0, yOffset, 0.0)
-                        ..scale(scale, scale, 1.0),
+                      transform: Matrix4.diagonal3Values(scale, scale, 1.0)
+                        ..setTranslationRaw(0.0, yOffset, 0.0),
                       alignment: Alignment
                           .bottomCenter, // Anchor scale to bottom so it shrinks away from the top
                       child: child,
@@ -511,11 +273,11 @@ class _MangaListState extends State<MangaList>
                   );
                 },
                 child: MangaCard(
-                  title: manga['title']!,
-                  chapters: manga['chapters']!,
-                  score: manga['score']!,
-                  coverUrl: manga['coverUrl']!,
-                  bannerUrl: manga['bannerUrl']!,
+                  title: manga.title,
+                  chapters: manga.chapters?.toString() ?? '?',
+                  score: manga.score?.toString() ?? 'N/A',
+                  coverUrl: manga.imageUrl,
+                  bannerUrl: manga.imageUrl,
                   showStatusDot: showStatusDot,
                 ),
               ),

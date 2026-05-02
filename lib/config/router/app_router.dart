@@ -1,6 +1,9 @@
+import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animanga/config/router/app_routes.dart';
 import 'package:animanga/features/home/presentation/home_page.dart';
+import 'package:animanga/features/manga/presentation/screens/search_screen.dart';
+import 'package:animanga/features/home/widget/manga_list.dart';
 
 class AppRouter {
   AppRouter._();
@@ -12,6 +15,22 @@ class AppRouter {
         path: '/',
         name: AppRoutes.home,
         builder: (context, state) => HomePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        name: AppRoutes.search,
+        builder: (context, state) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.mangaList,
+        name: AppRoutes.mangaList,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return MangaList(
+            title: extra?['title'] ?? 'Trending Manga',
+            initialManga: extra?['initialManga'] as List<MangaModel>?,
+          );
+        },
       ),
     ],
   );

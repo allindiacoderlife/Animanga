@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 class CategoryCard extends StatelessWidget {
   final String title;
   final String imageUrl;
+  final VoidCallback? onTap;
 
   const CategoryCard({
     super.key,
     required this.title,
     required this.imageUrl,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
         height: 60,
         decoration: BoxDecoration(

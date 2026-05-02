@@ -6,8 +6,12 @@ import 'package:animanga/features/home/presentation/widgets/home_hero_carousel.d
 import 'package:animanga/features/home/presentation/widgets/home_search_bar.dart';
 import 'package:animanga/features/home/presentation/widgets/manga_sections.dart';
 import 'package:animanga/features/home/widget/manga_card.dart';
+import 'package:animanga/features/manga/data/repositories/manga_repository.dart';
+import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:go_router/go_router.dart';
+import 'package:animanga/config/router/app_routes.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +28,15 @@ class _HomePageState extends State<HomePage>
   int _refreshCount = 0;
   Timer? _autoScrollTimer;
   late final AnimationController _entranceController;
+  final MangaRepository _mangaRepository = MangaRepository();
+  List<MangaModel>? _topMangaList;
+  List<MangaModel>? _trendingManga;
+  List<MangaModel>? _trendingManhwa;
+  List<MangaModel>? _trendingNovel;
+  List<MangaModel>? _topRatedManga;
+  List<MangaModel>? _mostFavouriteManga;
+  bool _isHeroLoading = true;
+  bool _isSectionsLoading = true;
 
   @override
   void initState() {
@@ -37,9 +50,14 @@ class _HomePageState extends State<HomePage>
       duration: const Duration(milliseconds: 1000),
     )..forward();
 
+    _fetchTopManga();
+    _fetchSections();
+
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_pageController.hasClients) {
-        final nextPage = (_currentHeroIndex + 1) % dummyManga.length;
+        final listLength = (_topMangaList?.length ?? dummyManga.length);
+        if (listLength == 0) return;
+        final nextPage = (_currentHeroIndex + 1) % listLength;
         _pageController.animateToPage(
           nextPage,
           duration: const Duration(milliseconds: 800),
@@ -47,6 +65,65 @@ class _HomePageState extends State<HomePage>
         );
       }
     });
+  }
+
+  Future<void> _fetchTopManga() async {
+    try {
+      final list = await _mangaRepository.getTopManga();
+      if (mounted) {
+        setState(() {
+          _topMangaList = list;
+          _isHeroLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isHeroLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchSections() async {
+    try {
+      final results = await Future.wait([
+        _mangaRepository.searchManga(
+          type: 'manga',
+          orderBy: 'popularity',
+          limit: 20,
+        ),
+        _mangaRepository.searchManga(
+          type: 'manhwa',
+          orderBy: 'popularity',
+          limit: 20,
+        ),
+        _mangaRepository.searchManga(
+          type: 'novel',
+          orderBy: 'popularity',
+          limit: 20,
+        ),
+        _mangaRepository.searchManga(orderBy: 'score', limit: 20),
+        _mangaRepository.searchManga(orderBy: 'popularity', limit: 20),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _trendingManga = results[0];
+          _trendingManhwa = results[1];
+          _trendingNovel = results[2];
+          _topRatedManga = results[3];
+          _mostFavouriteManga = results[4];
+          _isSectionsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSectionsLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -120,10 +197,13 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _onRefresh() async {
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      _isHeroLoading = true;
+      _isSectionsLoading = true;
+    });
 
-    // Reset and restart animations for a fresh feel
+    await Future.wait([_fetchTopManga(), _fetchSections()]);
+
     _entranceController.reset();
     _entranceController.forward();
 
@@ -156,12 +236,18 @@ class _HomePageState extends State<HomePage>
                     start: 0.0,
                     end: 0.5,
                     beginOffset: Offset.zero,
-                    child: HeroBackground(
-                      heroIndex: _currentHeroIndex,
-                      bannerUrl:
-                          dummyManga[_currentHeroIndex %
-                              dummyManga.length]['bannerUrl'],
-                    ),
+                    child: _isHeroLoading
+                        ? Container(height: 450, color: Colors.grey[900])
+                        : HeroBackground(
+                            heroIndex: _currentHeroIndex,
+                            bannerUrl:
+                                _topMangaList != null &&
+                                    _topMangaList!.isNotEmpty
+                                ? _topMangaList![_currentHeroIndex %
+                                          _topMangaList!.length]
+                                      .imageUrl
+                                : null,
+                          ),
                   ),
                   Column(
                     children: [
@@ -174,13 +260,22 @@ class _HomePageState extends State<HomePage>
                       _buildAnimatedContent(
                         start: 0.1,
                         end: 0.6,
-                        child: HomeHeroCarousel(
-                          controller: _pageController,
-                          mangaList: dummyManga,
-                          onPageChanged: (index) =>
-                              setState(() => _currentHeroIndex = index),
-                          cardBuilder: (manga) => _buildHeroCard(manga),
-                        ),
+                        child: _isHeroLoading
+                            ? const SizedBox(
+                                height: 200,
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            : HomeHeroCarousel(
+                                controller: _pageController,
+                                mangaList: _topMangaList ?? [],
+                                onPageChanged: (index) =>
+                                    setState(() => _currentHeroIndex = index),
+                                cardBuilder: (manga) => _buildHeroCardFromModel(
+                                  manga as MangaModel,
+                                ),
+                              ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -194,6 +289,9 @@ class _HomePageState extends State<HomePage>
                                 child: CategoryCard(
                                   title: 'GENRES',
                                   imageUrl: AssetPath.bannerTwo,
+                                  onTap: () {
+                                    // Handle genres navigation if needed
+                                  },
                                 ),
                               ),
                             ),
@@ -206,6 +304,13 @@ class _HomePageState extends State<HomePage>
                                 child: CategoryCard(
                                   title: 'TOP SCORE',
                                   imageUrl: AssetPath.bannerThree,
+                                  onTap: () => context.push(
+                                    AppRoutes.mangaList,
+                                    extra: {
+                                      'title': 'Top Score',
+                                      'initialManga': _topMangaList,
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
@@ -223,35 +328,38 @@ class _HomePageState extends State<HomePage>
               child: _buildAnimatedContent(
                 start: 0.3,
                 end: 0.7,
-                child: _buildSection('Trending Manga'),
+                child: _buildDynamicSection('Trending Manga', _trendingManga),
               ),
             ),
             SliverToBoxAdapter(
               child: _buildAnimatedContent(
                 start: 0.4,
                 end: 0.8,
-                child: _buildSection('Trending Manhwa'),
+                child: _buildDynamicSection('Trending Manhwa', _trendingManhwa),
               ),
             ),
             SliverToBoxAdapter(
               child: _buildAnimatedContent(
                 start: 0.5,
                 end: 0.9,
-                child: _buildSection('Trending Novel'),
+                child: _buildDynamicSection('Trending Novel', _trendingNovel),
               ),
             ),
             SliverToBoxAdapter(
               child: _buildAnimatedContent(
                 start: 0.6,
                 end: 1.0,
-                child: _buildSection('Top rated'),
+                child: _buildDynamicSection('Top rated', _topRatedManga),
               ),
             ),
             SliverToBoxAdapter(
               child: _buildAnimatedContent(
                 start: 0.7,
                 end: 1.0,
-                child: _buildSection('Most Favourite'),
+                child: _buildDynamicSection(
+                  'Most Favourite',
+                  _mostFavouriteManga,
+                ),
               ),
             ),
 
@@ -260,12 +368,24 @@ class _HomePageState extends State<HomePage>
               child: _buildAnimatedContent(
                 start: 0.8,
                 end: 1.0,
-                child: const SectionTitle(title: 'Popular Manga'),
+                child: SectionTitle(
+                  title: 'Popular Manga',
+                  onTap: () => context.push(
+                    AppRoutes.mangaList,
+                    extra: {
+                      'title': 'Popular Manga',
+                      'initialManga': _topMangaList,
+                    },
+                  ),
+                ),
               ),
             ),
             SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
-                final manga = dummyManga[index % dummyManga.length];
+                if (_topMangaList == null || _topMangaList!.isEmpty) {
+                  return const SizedBox();
+                }
+                final manga = _topMangaList![index % _topMangaList!.length];
                 final animation = _getEntranceAnimation(index);
 
                 return FadeTransition(
@@ -286,7 +406,8 @@ class _HomePageState extends State<HomePage>
                           bool isScrolling = false;
 
                           if (_mainScrollController.hasClients) {
-                            isScrolling = _mainScrollController
+                            isScrolling =
+                                _mainScrollController
                                     .position
                                     .userScrollDirection !=
                                 ScrollDirection.idle;
@@ -328,16 +449,20 @@ class _HomePageState extends State<HomePage>
                               end: isScrolling ? 1.0 : 0.0,
                             ),
                             builder: (context, intensity, child) {
-                              final finalScale = 1.0 + (scale - 1.0) * intensity;
-                              final finalOpacity = 1.0 + (opacity - 1.0) * intensity;
+                              final finalScale =
+                                  1.0 + (scale - 1.0) * intensity;
+                              final finalOpacity =
+                                  1.0 + (opacity - 1.0) * intensity;
                               final finalYOffset = yOffset * intensity;
 
                               return Opacity(
                                 opacity: finalOpacity,
                                 child: Transform(
-                                  transform: Matrix4.identity()
-                                    ..setTranslationRaw(0.0, finalYOffset, 0.0)
-                                    ..scale(finalScale, finalScale, 1.0),
+                                  transform: Matrix4.diagonal3Values(
+                                    finalScale,
+                                    finalScale,
+                                    1.0,
+                                  )..setTranslationRaw(0.0, finalYOffset, 0.0),
                                   alignment: Alignment.center,
                                   child: child,
                                 ),
@@ -347,18 +472,18 @@ class _HomePageState extends State<HomePage>
                           );
                         },
                         child: MangaCard(
-                          title: manga['title']!,
-                          chapters: manga['chapters']!,
-                          score: manga['score']!,
-                          coverUrl: manga['coverUrl']!,
-                          bannerUrl: manga['bannerUrl']!,
+                          title: manga.title,
+                          chapters: manga.chapters?.toString() ?? '?',
+                          score: manga.score?.toString() ?? 'N/A',
+                          coverUrl: manga.imageUrl,
+                          bannerUrl: manga.imageUrl,
                           showStatusDot: index >= 2,
                         ),
                       ),
                     ),
                   ),
                 );
-              }, childCount: 10),
+              }, childCount: _topMangaList?.length ?? 0),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
@@ -367,12 +492,23 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildSection(String title) {
+  Widget _buildDynamicSection(String title, List<MangaModel>? list) {
     return Column(
       key: ValueKey('section_${title}_$_refreshCount'),
       children: [
-        SectionTitle(title: title),
-        HorizontalMangaList(mangaList: dummyManga),
+        SectionTitle(
+          title: title,
+          onTap: () => context.push(
+            AppRoutes.mangaList,
+            extra: {'title': title, 'initialManga': list},
+          ),
+        ),
+        _isSectionsLoading
+            ? const SizedBox(
+                height: 220,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : HorizontalMangaList(mangaList: list ?? []),
       ],
     );
   }
@@ -388,7 +524,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildHeroCard(Map<String, String> manga) {
+  Widget _buildHeroCardFromModel(MangaModel manga) {
     return Container(
       decoration: const BoxDecoration(color: Colors.transparent),
       child: Row(
@@ -396,7 +532,7 @@ class _HomePageState extends State<HomePage>
           ClipRRect(
             borderRadius: BorderRadius.circular(15),
             child: Image.network(
-              manga['coverUrl']!,
+              manga.imageUrl,
               width: 120,
               height: 180,
               fit: BoxFit.cover,
@@ -410,10 +546,10 @@ class _HomePageState extends State<HomePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildScoreBadge(manga['score']!),
+                _buildScoreBadge(manga.score?.toString() ?? 'N/A'),
                 const SizedBox(height: 8),
                 Text(
-                  manga['title']!,
+                  manga.title,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -422,17 +558,38 @@ class _HomePageState extends State<HomePage>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const Text(
-                  'RELEASING',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                Text(
+                  manga.status ?? 'UNKNOWN',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 const Spacer(),
-                _buildHeroFooter(manga),
+                _buildHeroFooterFromModel(manga),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeroFooterFromModel(MangaModel manga) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '${manga.chapters ?? "?"} Chapters',
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+        Expanded(
+          child: Text(
+            manga.genres.join(' • '),
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            textAlign: TextAlign.right,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -451,27 +608,6 @@ class _HomePageState extends State<HomePage>
           fontWeight: FontWeight.bold,
         ),
       ),
-    );
-  }
-
-  Widget _buildHeroFooter(Map<String, String> manga) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          '${manga['chapters']} Chapters',
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-        Expanded(
-          child: Text(
-            manga['genre']!,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

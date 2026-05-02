@@ -1,3 +1,4 @@
+import 'package:animanga/features/manga/domain/models/manga_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -37,7 +38,7 @@ class SectionTitle extends StatelessWidget {
 }
 
 class HorizontalMangaList extends StatefulWidget {
-  final List<Map<String, String>> mangaList;
+  final List<MangaModel> mangaList;
 
   const HorizontalMangaList({super.key, required this.mangaList});
 
@@ -101,21 +102,18 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                 builder: (context, child) {
                   double scale = 1.0;
                   if (_scrollController.hasClients) {
-                    // Item width (110) + margin (12)
                     const itemWidth = 122.0;
                     final itemPosition = index * itemWidth;
                     final scrollOffset = _scrollController.offset;
                     final viewportWidth =
                         _scrollController.position.viewportDimension;
 
-                    // Calculate distance from center of viewport
                     final distanceToCenter =
                         (itemPosition + itemWidth / 2) -
                         (scrollOffset + viewportWidth / 2);
                     final normalizedDistance =
                         (distanceToCenter / (viewportWidth / 2)).abs();
 
-                    // Pop effect: items in center are 1.0, items at edges scale down slightly
                     scale = (1.0 - (normalizedDistance * 0.1)).clamp(0.9, 1.0);
                   }
 
@@ -132,10 +130,16 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              manga['coverUrl']!,
+                              manga.imageUrl,
                               height: 160,
                               width: 110,
                               fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.grey[900],
+                                height: 160,
+                                width: 110,
+                                child: const Icon(Icons.image_not_supported),
+                              ),
                             ),
                           ),
                           Positioned(
@@ -156,7 +160,7 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    manga['score']!,
+                                    manga.score?.toString() ?? 'N/A',
                                     style: const TextStyle(
                                       color: Colors.black,
                                       fontSize: 10,
@@ -176,7 +180,7 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        manga['title']!,
+                        manga.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -186,7 +190,9 @@ class _HorizontalMangaListState extends State<HorizontalMangaList>
                         ),
                       ),
                       Text(
-                        '• | ${manga['chapters']}',
+                        '${manga.status ?? "UNKNOWN"} | ${manga.chapters ?? "?"} Ch',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 10,
